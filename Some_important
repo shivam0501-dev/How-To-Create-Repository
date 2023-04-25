@@ -1,0 +1,170 @@
+All_Notes 
+how to upload Image 
+------------------------
+1. string wwrootpath = _env.WebRootPath;
+            if (file!= null)
+            {
+                string filename=Guid.NewGuid().ToString()+Path.GetExtension(file.FileName);
+                string productpath=Path.Combine(wwrootpath,@"Images/Product");
+                using ( var filestream = new FileStream(Path.Combine(productpath,filename),FileMode.Create))
+                {
+                   file.CopyTo(filestream);
+                }
+                p.product.imageurl = @"/Images/Product/" + filename;
+            }
+            ---------------------
+2.  how to use foregion key with SelectedListItem
+        
+        public IActionResult Upsert(int? id)
+        {
+                    //IEnumerable<SelectListItem> CategoryItems=_unitOfWork.category.GetAll().Select(
+                    //u=>new SelectListItem
+                    //{
+                    //    Text=u.Name,
+                    //    Value=u.Id.ToString()
+                    //}
+                    //);
+                    //ViewBag.CategoryItems=CategoryItems;
+                    //ViewData["CategoryItems"]=CategoryItems;
+            
+
+            VMProduct vmp = new()
+            {
+                CategoryList = _unitOfWork.category.GetAll().Select(u=>new SelectListItem
+                {
+                    Text=u.Name,
+                    Value=u.Id.ToString()
+                }),
+                product = new Product()
+            };
+            if (id == null || id==0)
+            {
+                return View(vmp);
+            }
+            else
+            {
+                vmp.product=_unitOfWork.product.GetFirstOrDefault(u=>u.id==id);
+                return View(vmp);
+            }
+            return View(vmp);
+        }
+  3. How To make Generic Repository.
+      --Repository--
+  
+  public class Repository<T> : IRepository<T> where T : class
+    {
+        private readonly DataContext _db;
+        internal DbSet<T> dbset;
+        public Repository(DataContext db)
+        {
+            _db = db;
+            this.dbset=_db.Set<T>();
+        }
+
+        public void Add(T entity)
+        {
+            dbset.Add(entity);
+        }
+
+        public IEnumerable<T> GetAll()
+        {
+            IQueryable<T> Query = dbset;
+            return Query.ToList();
+        }
+        public T Find(int Id)
+        {
+            var res= dbset.Find(Id);
+            return res;
+        }
+        public T GetFirstOrDefault(Expression<Func<T, bool>> filter)
+        {
+            IQueryable<T> Query = dbset;
+            Query=Query.Where(filter);
+            return Query.FirstOrDefault();
+        }
+
+        public void Remove(T entity)
+        {
+           dbset.Remove(entity);
+        }
+
+        public void RemoveRange(IEnumerable<T> entity)
+        {
+            dbset.RemoveRange(entity);
+        }  
+    }
+    
+     --IRepository--
+     
+      public interface IRepository<T> where T : class
+    {
+        //Category
+
+        IEnumerable<T> GetAll();
+        T GetFirstOrDefault(Expression<Func<T, bool>> filter);
+        T Find(int id);
+        void Add(T entity);
+        
+        void Remove(T entity);
+        void RemoveRange(IEnumerable<T> entity);
+    }
+     --ICategoryRepository--
+     
+     public interface ICategoryRepository:IRepository<Category>
+    {
+        void update(Category category);
+       
+    }
+     --CategoryRepository--
+     
+    public class CategoryRepository : Repository<Category>, ICategoryRepository
+    {
+        private readonly DataContext _db;
+        public CategoryRepository(DataContext db):base(db)
+        {
+            _db= db;
+        }
+        public void update(Category category)
+        {
+            _db.Update(category);
+        }
+    }
+    --UnitOfWork--
+    public class UnitOfWork:IUnitOfWork
+    {
+        private readonly DataContext _db;
+        public UnitOfWork(DataContext db)
+        {
+            _db = db;
+            category = new CategoryRepository(_db);
+            coverType= new CoverTypeRepository(_db);
+            product= new ProductRepository(_db);
+        }
+        public ICategoryRepository category { get; private set; }
+        public ICoverTypeRepository coverType { get; private set; }
+        public IProductReository product { get; private set; }
+
+        public void Save()
+        {
+           _db.SaveChanges();
+        }
+    }
+    ------IUnitOfWork---
+     public interface IUnitOfWork
+    {
+
+        ICategoryRepository category { get; }
+        ICoverTypeRepository coverType { get; }
+        IProductReository product { get; }
+
+        void Save();
+    }
+    --------Program.cs---
+    
+    builder.Services.AddScoped<IUnitOfWork,UnitOfWork>();
+
+//builder.Services.AddScoped<ICategoryRepository,CategoryRepository>();
+builder.Services.AddMvc();
+builder.Services.AddSession(options => {
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+});

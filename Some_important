@@ -1,18 +1,43 @@
 All_Notes 
-how to upload Image 
+how to upload Image or file
 ------------------------
 1. string wwrootpath = _env.WebRootPath;
             if (file!= null)
             {
+
                 string filename=Guid.NewGuid().ToString()+Path.GetExtension(file.FileName);
                 string productpath=Path.Combine(wwrootpath,@"Images/Product");
+                if(!string.IsNullOrEmpty(p.product.imageurl))
+                {
+                    var oldImagePath=Path.Combine(wwrootpath,p.product.imageurl.TrimStart('/'));
+                    if(System.IO.File.Exists(oldImagePath))
+                    {
+                        System.IO.File.Delete(oldImagePath);
+                    }
+                }
                 using ( var filestream = new FileStream(Path.Combine(productpath,filename),FileMode.Create))
                 {
                    file.CopyTo(filestream);
                 }
                 p.product.imageurl = @"/Images/Product/" + filename;
             }
-            ---------------------
+            
+            if (p.product.id == 0) 
+            {
+                _unitOfWork.product.Add(p.product);
+                _unitOfWork.Save();
+                TempData["success"] = "Record Added Successfully.!";
+            }
+            else
+            {
+                _unitOfWork.product.update(p.product);
+                _unitOfWork.Save();
+                TempData["success"] = "Record Updateed.!";
+            }
+           
+            return RedirectToAction("Index");
+-----------
+         
 2.  how to use foregion key with SelectedListItem
         
         public IActionResult Upsert(int? id)
@@ -168,3 +193,4 @@ builder.Services.AddMvc();
 builder.Services.AddSession(options => {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
 });
+------

@@ -193,4 +193,20 @@ builder.Services.AddMvc();
 builder.Services.AddSession(options => {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
 });
-------
+-------
+-------
+how to show data with foregion Key --
+ex first table product and second table category we are fetching data foregion key CategoryId -
+they are provideing predefind property
+--
+public ProductController()
+{
+            
+       
+public ProductController(IUnitOfWork unitOfWork, IWebHostEnvironment env)
+        {
+            _unitOfWork= unitOfWork;
+            _env= env;
+            _db.Products.Include(u=>u.category);
+        }
+ }

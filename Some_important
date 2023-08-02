@@ -294,3 +294,70 @@ public ProductController(IUnitOfWork unitOfWork, IWebHostEnvironment env)
 }
 </script>
 ---------------------------
+download pdf  ----------------
+[HttpGet("AllUserReviewpdf")]
+		public async Task<IActionResult> AllUserReviewpdf()
+		{
+			var document = new PdfDocument();
+			var userReview = await GetUserReview();
+			//string imgeurl = "data:image/png;base64, " + Getbase64string() + "";
+			string[] copies = { "Employee Review"};
+			for (int i = 0; i < copies.Length; i++)
+			{
+				string htmlcontent = "<div style='width:100%; text-align:center'>";
+				//htmlcontent += "<img style='width:100;height:200px' src='" + imgeurl + "'   />";
+				htmlcontent += "<h2>" + copies[i] + "</h2>";
+				htmlcontent += "<h2>Welcome to EPL_group</h2>";
+				htmlcontent += "<table style='width:100%; border: 1px solid #000'>";
+				htmlcontent += "<thead style='font-weight:bold'>";
+				htmlcontent += "<tr>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>Employee</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>QualityOfWork</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>QWcomments</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>CustomerSatisfaction</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>CScomments</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>TimeAndAttendance</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>TaAcomments</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>AdaptabilityFlexibility</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>ABFcomments</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>Initiative</td>";
+				htmlcontent += "<td style='border:1px solid #000; width: 8%'>ITcomments</td>";
+				htmlcontent += "</tr>";
+				htmlcontent += "</thead>";
+				htmlcontent += "<tbody>";
+				
+					userReview.ForEach(item =>
+					{
+						htmlcontent += "<tr>";
+						htmlcontent += "<td>" + item.Username + "</td>";
+						htmlcontent += "<td>" + item.QualityOfWork + "</td>";
+						htmlcontent += "<td>" + item.QWcomments + "</td >";
+						htmlcontent += "<td>" + item.CustomerSatisfaction + "</td>";
+						htmlcontent += "<td> " + item.CScomments + "</td >";
+						htmlcontent += "<td>" + item.TimeAndAttendance + "</td>";
+						htmlcontent += "<td>" + item.TaAcomments + "</td>";
+						htmlcontent += "<td>" + item.AdaptabilityFlexibility + "</td >";
+						htmlcontent += "<td>" + item.ABFcomments + "</td>";
+						htmlcontent += "<td> " + item.Initiative + "</td >";
+						htmlcontent += "<td>" + item.ITcomments + "</td>";
+						htmlcontent += "</tr>";
+					});
+				
+				htmlcontent += "</tbody>";
+				htmlcontent += "</table>";
+				htmlcontent += "</div>";
+				PdfGenerator.AddPdfPages(document,
+							 htmlcontent,
+							 PageSize.A2);
+			}
+			byte[]? response = null;
+			using (MemoryStream ms = new MemoryStream())
+			{
+				document.Save(ms);
+				response = ms.ToArray();
+			}
+			string Filename = "EmployeeReview.pdf";
+			return File(response, "application/pdf", Filename);
+		}
+==========================
+

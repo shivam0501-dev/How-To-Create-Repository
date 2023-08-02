@@ -210,3 +210,87 @@ public ProductController(IUnitOfWork unitOfWork, IWebHostEnvironment env)
             _db.Products.Include(u=>u.category);
         }
  }
+
+--AutoComplete---
+[HttpPost]
+        public JsonResult Index(string Prefix, string GetType)
+        {
+            string[,] param = new string[,] {
+                {"@GetType",GetType },
+                {"@Prefix",Prefix }
+            };
+            DataTable dt = Common.ExecuteData("AutocompleteProduct", param);
+            List<string> auto=new List<string>(dt.Rows.Count);
+            foreach (DataRow item in dt.Rows)
+            {
+                auto.Add(item[0].ToString());
+            }
+            return Json(auto);
+        }
+--
+ public static string constr = "Data Source=DESKTOP-T4MQ4KH;Initial Catalog=checkauto;Integrated Security=True";
+        public static DataTable ExecuteData(string proc, string[,] param)
+        {
+            DataTable dt = new DataTable();
+            SqlConnection con = new SqlConnection(constr);
+            SqlCommand cmd = new SqlCommand(proc, con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            for (int i = 0; i < param.Length/2; i++)
+            {
+                cmd.Parameters.AddWithValue(param[i, 0], param[i,1]);
+            }
+            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+            adapter.Fill(dt);
+            return dt;
+        }
+--
+@{
+    ViewData["Title"] = "Home Page";
+    Layout = null;
+}
+@*<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
+    <script src="https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>*@
+@*    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>*@
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+@*
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+*@
+<div class="text-center">
+    <div class="form-group">
+        <div class="row">
+            <label>Enter Name</label>
+            <input type="text" id="name" onfocus="AutoComplete('name','country')"/>
+        </div>
+    </div>
+  </div>
+  <script>
+   function AutoComplete(Id, GetType) {
+    $('#' + Id).autocomplete({
+        source: function (request, response) {
+            $.ajax({
+                url: "/Home/Index",
+                type: "POST",
+                dataType: "json",
+                data: { Prefix: request.term, GetType: GetType },
+                success: function (data) {
+                    response($.map(data, function (item) {
+                        //alert(item)
+                        return { label: item, value: item };
+                    }))
+                }
+            })
+        },
+        messages: {
+            noResults: "", results: ""
+        }
+    });
+}
+</script>
+---------------------------

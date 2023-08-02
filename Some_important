@@ -360,4 +360,137 @@ download pdf  ----------------
 			return File(response, "application/pdf", Filename);
 		}
 ==========================
-
+Send Email
+====================
+public ActionResult SendEmail(string receiver, string subject, string message)
+       {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var senderEmail = new MailAddress("shivamagrahari0501@gmail.com", "shivam0501");
+                    var receiverEmail = new MailAddress(receiver, "Receiver");
+                    var password = "gfxsfrdtoixmkwad";
+                    var sub = subject;
+                    var body = message;
+                    var smtp = new SmtpClient
+                    {
+                        Host = "smtp.gmail.com",
+                        Port = 587,
+                        EnableSsl = true,
+                        DeliveryMethod = SmtpDeliveryMethod.Network,
+                        UseDefaultCredentials = false,
+                        Credentials = new NetworkCredential(senderEmail.Address, password)
+                    };
+                    using (var mess = new MailMessage(senderEmail, receiverEmail)
+                    {
+                        IsBodyHtml=true,
+                        Subject = subject,
+                        Body = body
+                    })
+                    {
+                        smtp.Send(mess);
+                        TempData["success"] = "Email Successfully send";
+                    }
+                    return RedirectToAction("SendEmail");
+                }
+                else
+                {
+                    TempData["error"] = "Email not send";
+                    return View();
+                }
+            }
+            catch (Exception)
+            {
+                ViewBag.Error = "Some Error";
+                TempData["error"] = "Email not send";
+                return View();
+            }
+        }
+============================
+Password & 
+--------------
+namespace API.Controllers
+{
+    public class AccountController:BaseApiController
+    {
+        private readonly DataContext _db;
+        private readonly IToken _tokens;
+        public AccountController(DataContext db,IToken tokens)
+        {
+            _db=db;
+            _tokens=tokens;
+        }
+        [HttpPost("register")] //Post- api/Account/register
+        public async Task<ActionResult<AppUserDto>> Register(RegisterDTO r)
+        {
+            if(r.UserName==null){
+                return BadRequest("UserName Is null");
+            }
+            else if(r.Password==null){
+                return BadRequest("password Is null");
+            }
+            else{
+            if(await UserExists(r.UserName)) return BadRequest("UserName Is Taken");
+            using var hmac=new HMACSHA512();
+            AppUser u=new AppUser();
+            u.UserName=r.UserName.ToLower();
+            u.PasswordHash=hmac.ComputeHash(Encoding.UTF8.GetBytes(r.Password));
+            u.PasswordSalt=hmac.Key;
+             _db.AppUsers.Add(u);
+            await _db.SaveChangesAsync();
+                AppUserDto ad=new AppUserDto();
+                ad.UserName=u.UserName;
+                ad.Token=_tokens.Create(u);
+            return ad;
+            }
+        }
+        public async Task<bool> UserExists(string UserName){
+        return  await _db.AppUsers.AnyAsync(u=>u.UserName==UserName.ToLower());
+        }
+        [HttpPost("Login")]
+        public async Task<ActionResult<AppUserDto>> Login(LoginDto l){
+            var res=await _db.AppUsers.SingleOrDefaultAsync(u=>u.UserName==l.UserName);
+            if(res==null) return Unauthorized("Invalid UserName");
+            using  var hmac=new HMACSHA512(res.PasswordSalt);
+            var computinghas=hmac.ComputeHash(Encoding.UTF8.GetBytes(l.Password));
+            for(int i=0;i<=computinghas.GetUpperBound(0);i++)
+            {
+                if(computinghas[i]!=res.PasswordHash[i])return Unauthorized("Invalid Password");
+            }
+            AppUserDto ad=new AppUserDto();
+                ad.UserName=res.UserName;
+                ad.Token=_tokens.Create(res);
+            return ad;
+        }
+    }
+}
+======================
+change password userman\ager---------
+#region UpdatePassword
+		[HttpPost("UpdatePassword")]
+		public async Task<ActionResult<Status>> UpdatePassword(string email, string newPassword)
+		{
+            Status U = new();
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null)
+			{
+				U.Message = "Can not Find Email or Otp";
+				U.statusCode = 1;
+			}
+			string newPasswordHash = _userManager.PasswordHasher.HashPassword(user, newPassword);
+			user.PasswordHash = newPasswordHash;
+			var result = await _userManager.UpdateAsync(user);
+			if (result.Succeeded)
+			{
+				U.Message = "Password Change Successfully!!";
+				U.statusCode = 1;
+				return U;
+			}
+            else
+            {
+				U.Message = result.Errors.ToString();
+				U.statusCode = 1;
+                return U;
+			}
+=======================
